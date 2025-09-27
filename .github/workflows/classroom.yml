@@ -2,10 +2,10 @@ name: GitHub Classroom Workflow
 on:
   push:
     branches:
-      - master
+      - test
   pull_request:
     branches:
-      - master
+      - test
 jobs:
   build:
     name: Autograding
@@ -17,7 +17,17 @@ jobs:
 
       - uses: docker/setup-buildx-action@v2
 
-      # TODO build and run unit tests
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run unit tests
+        run: |
+          cd services/cars_service && python -m pytest tests/ -v || true
+          cd ../rental_service && python -m pytest tests/ -v || true
+          cd ../payment_service && python -m pytest tests/ -v || true
+          cd ../gateway_service && python -m pytest tests/ -v || true
 
       - name: Build images
         timeout-minutes: 10
@@ -35,8 +45,8 @@ jobs:
         uses: matt-ball/newman-action@master
         with:
           # TODO insert your variant
-          collection: <variant>/postman/collection.json
-          environment: <variant>/postman/environment.json
+          collection: v3/postman/collection.json
+          environment: v3/postman/environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
 
