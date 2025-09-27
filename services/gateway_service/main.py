@@ -38,15 +38,17 @@ async def health_check():
 
 @app.get("/api/v1/cars")
 async def get_cars(
-    page: int = Query(0, ge=0),
-    page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     show_all: bool = Query(False)
 ):
     """Get list of available cars"""
     try:
+        # Convert page from 1-based to 0-based for internal services
+        internal_page = page - 1 if page > 0 else 0
         response = requests.get(
             f"{CARS_SERVICE_URL}/api/v1/cars",
-            params={"page": page, "pageSize": page_size, "showAll": show_all}
+            params={"page": internal_page, "pageSize": size, "showAll": show_all}
         )
         if response.status_code == 200:
             return response.json()
@@ -141,6 +143,26 @@ async def finish_rental(rental_uid: str, username: str = Depends(get_username)):
 
 @app.delete("/api/v1/rental/{rental_uid}")
 async def cancel_rental(rental_uid: str, username: str = Depends(get_username)):
+    """Cancel rental"""
+    try:
+        response = requests.delete(
+            f"{RENTAL_SERVICE_URL}/api/v1/rental/{rental_uid}",
+            headers={"X-User-Name": username}
+        )
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Rental not found")
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Rental service error")
+    except requests.RequestException:
+        raise HTTPException(status_code=503, detail="Rental service unavailable")
+
+@app.delete("/api/v1/rental/{rental_uid}")
+async def cancel_rental(
+    rental_uid: str,
+    username: str = Depends(get_username)
+):
     """Cancel rental"""
     try:
         response = requests.delete(
