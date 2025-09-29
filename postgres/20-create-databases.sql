@@ -8,6 +8,7 @@ GRANT ALL PRIVILEGES ON DATABASE rentals TO program;
 CREATE DATABASE payments;
 GRANT ALL PRIVILEGES ON DATABASE payments TO program;
 
+
 -- Create tables for cars database
 \c cars;
 CREATE TABLE cars
@@ -55,3 +56,5 @@ CREATE TABLE payment
         CHECK (status IN ('PAID', 'CANCELED')),
     price       INT         NOT NULL
 );
+
+GRANT USAGE ON ALL SEQUENCES IN schema public TO program;

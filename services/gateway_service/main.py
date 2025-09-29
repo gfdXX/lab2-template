@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from uuid import UUID
 import requests
 import os
 
@@ -23,7 +24,7 @@ PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8
 
 # Pydantic models
 class RentalRequest(BaseModel):
-    carUid: str
+    carUid: UUID
     dateFrom: str
     dateTo: str
 
@@ -92,7 +93,7 @@ async def get_rentals(
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.get("/api/v1/rental/{rental_uid}")
-async def get_rental(rental_uid: str, username: str = Depends(get_username)):
+async def get_rental(rental_uid: UUID, username: str = Depends(get_username)):
     """Get rental by UID"""
     try:
         response = requests.get(
@@ -125,7 +126,7 @@ async def create_rental(rental_request: RentalRequest, username: str = Depends(g
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.post("/api/v1/rental/{rental_uid}/finish")
-async def finish_rental(rental_uid: str, username: str = Depends(get_username)):
+async def finish_rental(rental_uid: UUID, username: str = Depends(get_username)):
     """Finish rental"""
     try:
         response = requests.post(
@@ -142,7 +143,7 @@ async def finish_rental(rental_uid: str, username: str = Depends(get_username)):
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.delete("/api/v1/rental/{rental_uid}")
-async def cancel_rental(rental_uid: str, username: str = Depends(get_username)):
+async def cancel_rental(rental_uid: UUID, username: str = Depends(get_username)):
     """Cancel rental"""
     try:
         response = requests.delete(

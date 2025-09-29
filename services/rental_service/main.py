@@ -1,12 +1,14 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
 import uuid
+from uuid import UUID
 import os
 import requests
 
@@ -21,22 +23,22 @@ class Rental(Base):
     __tablename__ = "rental"
     
     id = Column(Integer, primary_key=True, index=True)
-    rental_uid = Column(String, unique=True, index=True, default=lambda: str(uuid.uuid4()))
+    rental_uid = Column(PostgresUUID(as_uuid=True), unique=True, index=True, default=uuid.uuid4)
     username = Column(String(80), nullable=False)
-    payment_uid = Column(String, nullable=False)
-    car_uid = Column(String, nullable=False)
+    payment_uid = Column(PostgresUUID(as_uuid=True), nullable=False)
+    car_uid = Column(PostgresUUID(as_uuid=True), nullable=False)
     date_from = Column(DateTime, nullable=False)
     date_to = Column(DateTime, nullable=False)
     status = Column(String(20), nullable=False, default="IN_PROGRESS")
 
 # Pydantic models
 class RentalRequest(BaseModel):
-    carUid: str
+    carUid: UUID
     dateFrom: str
     dateTo: str
 
 class RentalResponse(BaseModel):
-    rentalUid: str
+    rentalUid: UUID
     status: str
     dateFrom: str
     dateTo: str
@@ -45,6 +47,9 @@ class RentalResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            UUID: str
+        }
 
 class RentalListResponse(BaseModel):
     page: int
@@ -135,7 +140,7 @@ async def get_rentals(
 
 @app.get("/api/v1/rental/{rental_uid}", response_model=RentalResponse)
 async def get_rental(
-    rental_uid: str,
+    rental_uid: UUID,
     username: str = Depends(get_username),
     db: Session = Depends(get_db)
 ):
@@ -247,7 +252,7 @@ async def create_rental(
 
 @app.post("/api/v1/rental/{rental_uid}/finish")
 async def finish_rental(
-    rental_uid: str,
+    rental_uid: UUID,
     username: str = Depends(get_username),
     db: Session = Depends(get_db)
 ):
@@ -280,7 +285,7 @@ async def finish_rental(
 
 @app.delete("/api/v1/rental/{rental_uid}")
 async def cancel_rental(
-    rental_uid: str,
+    rental_uid: UUID,
     username: str = Depends(get_username),
     db: Session = Depends(get_db)
 ):

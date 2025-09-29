@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
 from typing import List, Optional
 import uuid
+from uuid import UUID
 import os
 
 # Database setup
@@ -19,7 +21,7 @@ class Car(Base):
     __tablename__ = "cars"
     
     id = Column(Integer, primary_key=True, index=True)
-    car_uid = Column(String, unique=True, index=True, default=lambda: str(uuid.uuid4()))
+    car_uid = Column(PostgresUUID(as_uuid=True), unique=True, index=True, default=uuid.uuid4)
     brand = Column(String(80), nullable=False)
     model = Column(String(80), nullable=False)
     registration_number = Column(String(20), nullable=False)
@@ -30,7 +32,7 @@ class Car(Base):
 
 # Pydantic models
 class CarResponse(BaseModel):
-    carUid: str
+    carUid: UUID
     brand: str
     model: str
     registrationNumber: str
@@ -41,6 +43,9 @@ class CarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            UUID: str
+        }
 
 class CarListResponse(BaseModel):
     page: int
@@ -113,7 +118,7 @@ async def get_cars(
     )
 
 @app.get("/api/v1/cars/{car_uid}", response_model=CarResponse)
-async def get_car(car_uid: str, db: Session = Depends(get_db)):
+async def get_car(car_uid: UUID, db: Session = Depends(get_db)):
     """Get car by UID"""
     car = db.query(Car).filter(Car.car_uid == car_uid).first()
     if not car:
@@ -132,7 +137,7 @@ async def get_car(car_uid: str, db: Session = Depends(get_db)):
 
 @app.patch("/api/v1/cars/{car_uid}/availability")
 async def update_car_availability(
-    car_uid: str, 
+    car_uid: UUID, 
     available: bool,
     db: Session = Depends(get_db)
 ):

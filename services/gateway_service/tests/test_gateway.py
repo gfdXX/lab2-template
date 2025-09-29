@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+import uuid
 
 client = TestClient(app)
 
@@ -14,5 +15,6 @@ def test_get_rentals_missing_header():
     assert response.status_code == 400
 
 def test_get_rental_missing_header():
-    response = client.get("/api/v1/rental/test-uid")
+    test_uuid = uuid.uuid4()
+    response = client.get(f"/api/v1/rental/{test_uuid}")
     assert response.status_code == 400

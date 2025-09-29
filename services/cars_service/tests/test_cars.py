@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+import uuid
 
 # Mock the database connection
 with patch('main.engine'), patch('main.SessionLocal'):
@@ -40,5 +41,6 @@ def test_get_car_not_found(mock_get_db):
     mock_session.query.return_value = mock_query
     mock_get_db.return_value.__enter__.return_value = mock_session
     
-    response = client.get("/api/v1/cars/non-existent-uid")
+    test_uuid = uuid.uuid4()
+    response = client.get(f"/api/v1/cars/{test_uuid}")
     assert response.status_code == 404
