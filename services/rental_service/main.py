@@ -13,7 +13,7 @@ import os
 import requests
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://program:test@localhost:5432/rental_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://program:test@localhost:5432/rentals")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
