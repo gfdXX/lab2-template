@@ -93,7 +93,7 @@ async def get_rentals(
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.get("/api/v1/rental/{rental_uid}")
-async def get_rental(rental_uid: UUID, username: str = Depends(get_username)):
+async def get_rental(rental_uid: str, username: str = Depends(get_username)):
     """Get rental by UID"""
     try:
         response = requests.get(
@@ -126,15 +126,15 @@ async def create_rental(rental_request: RentalRequest, username: str = Depends(g
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.post("/api/v1/rental/{rental_uid}/finish")
-async def finish_rental(rental_uid: UUID, username: str = Depends(get_username)):
+async def finish_rental(rental_uid: str, username: str = Depends(get_username)):
     """Finish rental"""
     try:
         response = requests.post(
             f"{RENTAL_SERVICE_URL}/api/v1/rental/{rental_uid}/finish",
             headers={"X-User-Name": username}
         )
-        if response.status_code == 200:
-            return response.json()
+        if response.status_code == 204:
+            return None
         elif response.status_code == 404:
             raise HTTPException(status_code=404, detail="Rental not found")
         else:
@@ -143,35 +143,15 @@ async def finish_rental(rental_uid: UUID, username: str = Depends(get_username))
         raise HTTPException(status_code=503, detail="Rental service unavailable")
 
 @app.delete("/api/v1/rental/{rental_uid}")
-async def cancel_rental(rental_uid: UUID, username: str = Depends(get_username)):
+async def cancel_rental(rental_uid: str, username: str = Depends(get_username)):
     """Cancel rental"""
     try:
         response = requests.delete(
             f"{RENTAL_SERVICE_URL}/api/v1/rental/{rental_uid}",
             headers={"X-User-Name": username}
         )
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Rental not found")
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Rental service error")
-    except requests.RequestException:
-        raise HTTPException(status_code=503, detail="Rental service unavailable")
-
-@app.delete("/api/v1/rental/{rental_uid}")
-async def cancel_rental(
-    rental_uid: str,
-    username: str = Depends(get_username)
-):
-    """Cancel rental"""
-    try:
-        response = requests.delete(
-            f"{RENTAL_SERVICE_URL}/api/v1/rental/{rental_uid}",
-            headers={"X-User-Name": username}
-        )
-        if response.status_code == 200:
-            return response.json()
+        if response.status_code == 204:
+            return None
         elif response.status_code == 404:
             raise HTTPException(status_code=404, detail="Rental not found")
         else:

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
@@ -281,7 +281,7 @@ async def finish_rental(
     rental.status = "FINISHED"
     db.commit()
     
-    return {"message": "Rental finished successfully"}
+    return Response(status_code=204)
 
 @app.delete("/api/v1/rental/{rental_uid}")
 async def cancel_rental(
@@ -320,7 +320,7 @@ async def cancel_rental(
     rental.status = "CANCELED"
     db.commit()
     
-    return {"message": "Rental canceled successfully"}
+    return Response(status_code=204)
 
 if __name__ == "__main__":
     import uvicorn

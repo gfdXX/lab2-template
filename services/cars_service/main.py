@@ -88,22 +88,22 @@ async def health_check():
 @app.get("/api/v1/cars", response_model=CarListResponse)
 async def get_cars(
     page: int = Query(0, ge=0),
-    page_size: int = Query(20, ge=1, le=100),
-    show_all: bool = Query(False),
+    pageSize: int = Query(20, ge=1, le=100),
+    showAll: bool = Query(False),
     db: Session = Depends(get_db)
 ):
     """Get list of available cars"""
     query = db.query(Car)
     
-    if not show_all:
+    if not showAll:
         query = query.filter(Car.availability == True)
     
     total = query.count()
-    cars = query.offset(page * page_size).limit(page_size).all()
+    cars = query.offset(page * pageSize).limit(pageSize).all()
     
     return CarListResponse(
         page=page,
-        pageSize=page_size,
+        pageSize=pageSize,
         totalElements=total,
         items=[CarResponse(
             carUid=car.car_uid,
