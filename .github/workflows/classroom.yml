@@ -19,10 +19,10 @@ jobs:
 
       - name: Run unit tests
         run: |
-          docker-compose run --rm cars-service python -m pytest tests/ -v
-          docker-compose run --rm rental-service python -m pytest tests/ -v
-          docker-compose run --rm payment-service python -m pytest tests/ -v
-          docker-compose run --rm gateway-service python -m pytest tests/ -v
+          docker compose run --rm cars-service python -m pytest tests/ -v
+          docker compose run --rm rental-service python -m pytest tests/ -v
+          docker compose run --rm payment-service python -m pytest tests/ -v
+          docker compose run --rm gateway-service python -m pytest tests/ -v
 
   build-and-deploy:
     name: Build and Deploy
@@ -37,12 +37,12 @@ jobs:
 
       - name: Build images
         timeout-minutes: 10
-        run: docker-compose build
+        run: docker compose build
 
       - name: Run containers
         timeout-minutes: 5
         run: |
-          docker-compose up -d
+          docker compose up -d
           chmod +x ./scripts/wait-script.sh
           chmod +x ./scripts/wait-for.sh
           ./scripts/wait-script.sh
@@ -102,4 +102,4 @@ jobs:
 
       - name: Stop containers
         continue-on-error: true
-        run: docker-compose down -v
+        run: docker compose down -v
