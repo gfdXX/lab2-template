@@ -11,7 +11,7 @@ from uuid import UUID
 import os
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://program:test@localhost:5432/cars_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://program:test@localhost:5432/cars")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
