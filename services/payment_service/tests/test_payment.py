@@ -1,7 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
-from main import app
+from unittest.mock import patch, MagicMock
 import uuid
+
+# Mock the database connection
+with patch('main.engine'), patch('main.SessionLocal'):
+    from main import app
 
 client = TestClient(app)
 
@@ -18,7 +22,15 @@ def test_health_check():
 #     assert data["price"] == 1000
 #     assert data["status"] == "PAID"
 
-def test_get_payment_not_found():
+@patch('main.get_db')
+def test_get_payment_not_found(mock_get_db):
+    # Mock database session
+    mock_session = MagicMock()
+    mock_query = MagicMock()
+    mock_query.filter.return_value.first.return_value = None
+    mock_session.query.return_value = mock_query
+    mock_get_db.return_value.__enter__.return_value = mock_session
+    
     test_uuid = uuid.uuid4()
     response = client.get(f"/api/v1/payments/{test_uuid}")
     assert response.status_code == 404
