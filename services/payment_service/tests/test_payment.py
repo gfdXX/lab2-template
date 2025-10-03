@@ -23,7 +23,7 @@ def test_payment_endpoints_exist():
     """Test that payment endpoints are properly configured"""
     # Test POST endpoint exists
     response = client.post("/api/v1/payments", json={})
-    assert response.status_code in [400, 422, 500]  # Bad request or validation error expected
+    assert response.status_code in [400, 422, 500]  # Bad request, validation error, or DB error expected
     
     # Test GET endpoint exists
     response = client.get("/api/v1/payments/invalid-uuid")
