@@ -81,6 +81,7 @@ jobs:
           collection: v3/postman/collection.json
           environment: v3/postman/environment.json
           delayRequest: 100
+          args: --reporters cli,json --reporter-json-export newman-report.json
           reporters: '[ "cli" ]'
 
       - uses: education/autograding@v1
