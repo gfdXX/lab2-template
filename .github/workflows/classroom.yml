@@ -6,9 +6,10 @@ on:
   pull_request:
     branches:
       - test
+
 jobs:
-  build:
-    name: Autograding
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,6 +25,17 @@ jobs:
           docker compose run --rm payment-service python -m pytest services/payment_service/tests/ -v || true
           docker compose run --rm gateway-service python -m pytest services/gateway_service/tests/ -v || true
 
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-buildx-action@v2
+
       - name: Clean Docker cache and volumes
         run: |
           docker system prune -f
@@ -38,67 +50,37 @@ jobs:
         timeout-minutes: 10
         run: |
           docker compose down -v
-          docker volume ls
-          docker volume rm $(docker volume ls -q) 2>/dev/null || true
           docker compose up -d
           chmod +x ./scripts/wait-script.sh
           chmod +x ./scripts/wait-for.sh
           ./scripts/wait-script.sh
-          # Additional wait for database initialization
           sleep 10
-          # Show container logs for debugging
-          echo "=== Container Status ==="
-          docker compose ps
-          echo "=== Gateway Service Logs ==="
-          docker compose logs gateway-service --tail=20
-          echo "=== Cars Service Logs ==="
-          docker compose logs cars-service --tail=20
-          echo "=== Rental Service Logs ==="
-          docker compose logs rental-service --tail=20
-           echo "=== PostgreSQL Logs ==="
-           docker logs postgres --tail=50
-           echo "=== DB-Init Logs ==="
-           docker logs db-init --tail=50
-           echo "=== DB-Init Status ==="
-           docker inspect db-init --format='{{.State.Status}}'
-           echo "=== DB-Init Exit Code ==="
-           docker inspect db-init --format='{{.State.ExitCode}}'
-           echo "=== Check init script ==="
-           docker exec db-init ls -la /init-databases.sh || echo "Script not found"
-           docker exec db-init cat /init-databases.sh | head -10 || echo "Cannot read script"
-           echo "=== Database Check ==="
-           docker exec postgres psql -U program -d postgres -c "SELECT datname FROM pg_database;" || echo "Database list failed"
-           docker exec postgres psql -U program -d cars -c "SELECT COUNT(*) FROM cars;" || echo "Cars DB check failed"
-           docker exec postgres psql -U program -d rentals -c "SELECT COUNT(*) FROM rental;" || echo "Rentals DB check failed"
-           docker exec postgres psql -U program -d payments -c "SELECT COUNT(*) FROM payment;" || echo "Payments DB check failed"
         env:
           WAIT_PORTS: 8080,8070,8060,8050
 
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
-          # TODO insert your variant
           collection: v3/postman/collection.json
           environment: v3/postman/environment.json
           delayRequest: 100
           args: --reporters cli,json --reporter-json-export newman-report.json
           reporters: '[ "cli" ]'
 
-      - uses: education/autograding@v1
-        id: autograder
-        continue-on-error: true
-
-      # - name: Github auto grader mark
-      #   uses: Romanow/google-sheet-autograder-marker@v1.0
-      #   with:
-      #     google_token: ${{secrets.GOOGLE_API_KEY}}
-      #     sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
-      #     homework_number: 2
-      #     user_column: 'D'
-      #     column_offset: 'F'
-      #     mark: "'+"
-
       - name: Stop containers
         if: always()
         continue-on-error: true
         run: docker compose down -v
+
+  autograding:
+    name: Autograding
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: education/autograding@v1
+        id: autograder
+        continue-on-error: true
