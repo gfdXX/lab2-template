@@ -111,9 +111,15 @@ async def get_rental(rental_uid: str, username: str = Depends(get_username)):
 async def create_rental(rental_request: RentalRequest, username: str = Depends(get_username)):
     """Create new rental"""
     try:
+        # Convert to dict and ensure all values are JSON serializable
+        rental_data = {
+            "carUid": str(rental_request.carUid),
+            "dateFrom": str(rental_request.dateFrom),
+            "dateTo": str(rental_request.dateTo)
+        }
         response = requests.post(
             f"{RENTAL_SERVICE_URL}/api/v1/rental",
-            json=rental_request.dict(),
+            json=rental_data,
             headers={"X-User-Name": username}
         )
         if response.status_code == 200:
@@ -132,7 +138,8 @@ async def finish_rental(rental_uid: str, username: str = Depends(get_username)):
             headers={"X-User-Name": username}
         )
         if response.status_code == 204:
-            return None
+            from fastapi import Response
+            return Response(status_code=204)
         elif response.status_code == 404:
             raise HTTPException(status_code=404, detail="Rental not found")
         else:
@@ -149,7 +156,8 @@ async def cancel_rental(rental_uid: str, username: str = Depends(get_username)):
             headers={"X-User-Name": username}
         )
         if response.status_code == 204:
-            return None
+            from fastapi import Response
+            return Response(status_code=204)
         elif response.status_code == 404:
             raise HTTPException(status_code=404, detail="Rental not found")
         else:

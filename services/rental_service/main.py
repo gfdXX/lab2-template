@@ -42,6 +42,7 @@ class RentalResponse(BaseModel):
     status: str
     dateFrom: str
     dateTo: str
+    carUid: str
     car: dict
     payment: dict
 
@@ -120,10 +121,11 @@ async def get_rentals(
             payment_data = {}
         
         items.append(RentalResponse(
-            rentalUid=rental.rental_uid,
+            rentalUid=str(rental.rental_uid),
             status=rental.status,
-            dateFrom=rental.date_from.isoformat(),
-            dateTo=rental.date_to.isoformat(),
+            dateFrom=rental.date_from.strftime("%Y-%m-%d") if isinstance(rental.date_from, datetime) else rental.date_from.isoformat(),
+            dateTo=rental.date_to.strftime("%Y-%m-%d") if isinstance(rental.date_to, datetime) else rental.date_to.isoformat(),
+            carUid=str(rental.car_uid),
             car=car_data,
             payment=payment_data
         ))
@@ -165,10 +167,11 @@ async def get_rental(
         payment_data = {}
     
     return RentalResponse(
-        rentalUid=rental.rental_uid,
+        rentalUid=str(rental.rental_uid),
         status=rental.status,
-        dateFrom=rental.date_from.isoformat(),
-        dateTo=rental.date_to.isoformat(),
+        dateFrom=rental.date_from.strftime("%Y-%m-%d") if isinstance(rental.date_from, datetime) else rental.date_from.isoformat(),
+        dateTo=rental.date_to.strftime("%Y-%m-%d") if isinstance(rental.date_to, datetime) else rental.date_to.isoformat(),
+        carUid=str(rental.car_uid),
         car=car_data,
         payment=payment_data
     )
@@ -192,8 +195,29 @@ async def create_rental(
         raise HTTPException(status_code=503, detail="Cars service unavailable")
     
     # Calculate rental days and price
-    date_from = datetime.fromisoformat(rental_request.dateFrom.replace('Z', '+00:00'))
-    date_to = datetime.fromisoformat(rental_request.dateTo.replace('Z', '+00:00'))
+    try:
+        # Handle different date formats
+        if 'T' in rental_request.dateFrom:
+            date_from = datetime.fromisoformat(rental_request.dateFrom.replace('Z', '+00:00'))
+        else:
+            date_from = datetime.strptime(rental_request.dateFrom, "%Y-%m-%d")
+    except ValueError:
+        try:
+            date_from = datetime.fromisoformat(rental_request.dateFrom)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format for dateFrom")
+    
+    try:
+        # Handle different date formats
+        if 'T' in rental_request.dateTo:
+            date_to = datetime.fromisoformat(rental_request.dateTo.replace('Z', '+00:00'))
+        else:
+            date_to = datetime.strptime(rental_request.dateTo, "%Y-%m-%d")
+    except ValueError:
+        try:
+            date_to = datetime.fromisoformat(rental_request.dateTo)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format for dateTo")
     rental_days = (date_to - date_from).days
     total_price = car_data["price"] * rental_days
     
@@ -241,8 +265,9 @@ async def create_rental(
     return RentalResponse(
         rentalUid=str(rental.rental_uid),
         status=rental.status,
-        dateFrom=rental.date_from.isoformat(),
-        dateTo=rental.date_to.isoformat(),
+        dateFrom=date_from.strftime("%Y-%m-%d"),
+        dateTo=date_to.strftime("%Y-%m-%d"),
+        carUid=str(rental.car_uid),
         car=car_data,
         payment=payment_info
     )
