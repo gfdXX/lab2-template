@@ -72,7 +72,8 @@ def get_db():
     # Create tables if they don't exist
     try:
         Base.metadata.create_all(bind=engine)
-    except:
+    except Exception as e:
+        print(f"Error creating tables: {e}")
         pass  # Tables might already exist
     
     db = SessionLocal()
@@ -93,29 +94,35 @@ async def get_cars(
     db: Session = Depends(get_db)
 ):
     """Get list of available cars"""
-    query = db.query(Car)
-    
-    if not showAll:
-        query = query.filter(Car.availability == True)
-    
-    total = query.count()
-    cars = query.offset((page - 1) * pageSize).limit(pageSize).all()
-    
-    return CarListResponse(
-        page=page,
-        pageSize=pageSize,
-        totalElements=total,
-        items=[CarResponse(
-            carUid=car.car_uid,
-            brand=car.brand,
-            model=car.model,
-            registrationNumber=car.registration_number,
-            power=car.power,
-            price=car.price,
-            type=car.type,
-            available=car.availability
-        ) for car in cars]
-    )
+    try:
+        query = db.query(Car)
+        
+        if not showAll:
+            query = query.filter(Car.availability == True)
+        
+        total = query.count()
+        cars = query.offset((page - 1) * pageSize).limit(pageSize).all()
+        
+        print(f"Cars service: Found {total} cars, returning {len(cars)} cars")
+        
+        return CarListResponse(
+            page=page,
+            pageSize=pageSize,
+            totalElements=total,
+            items=[CarResponse(
+                carUid=car.car_uid,
+                brand=car.brand,
+                model=car.model,
+                registrationNumber=car.registration_number,
+                power=car.power,
+                price=car.price,
+                type=car.type,
+                available=car.availability
+            ) for car in cars]
+        )
+    except Exception as e:
+        print(f"Error in get_cars: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/api/v1/cars/{car_uid}", response_model=CarResponse)
 async def get_car(car_uid: UUID, db: Session = Depends(get_db)):

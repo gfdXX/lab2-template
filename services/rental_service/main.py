@@ -183,15 +183,21 @@ async def create_rental(
     db: Session = Depends(get_db)
 ):
     """Create new rental"""
+    print(f"Creating rental for car {rental_request.carUid}, user {username}")
+    
     # Check if car exists and is available
     try:
         car_response = requests.get(f"http://cars-service:8070/api/v1/cars/{rental_request.carUid}")
+        print(f"Car service response: {car_response.status_code}")
         if car_response.status_code != 200:
+            print(f"Car not found: {car_response.text}")
             raise HTTPException(status_code=404, detail="Car not found")
         car_data = car_response.json()
+        print(f"Car data: {car_data}")
         if not car_data.get("available", False):
             raise HTTPException(status_code=400, detail="Car is not available")
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(f"Cars service error: {e}")
         raise HTTPException(status_code=503, detail="Cars service unavailable")
     
     # Calculate rental days and price
