@@ -45,15 +45,19 @@ async def get_cars(
 ):
     """Get list of available cars"""
     try:
+        print(f"Gateway: Requesting cars from {CARS_SERVICE_URL}/api/v1/cars")
         response = requests.get(
             f"{CARS_SERVICE_URL}/api/v1/cars",
             params={"page": page, "pageSize": size, "showAll": show_all}
         )
+        print(f"Gateway: Cars service response status: {response.status_code}")
+        print(f"Gateway: Cars service response body: {response.text[:200]}...")
         if response.status_code == 200:
             return response.json()
         else:
             raise HTTPException(status_code=response.status_code, detail="Cars service error")
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(f"Gateway: Cars service error: {e}")
         raise HTTPException(status_code=503, detail="Cars service unavailable")
 
 @app.get("/api/v1/cars/{car_uid}")
