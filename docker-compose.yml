@@ -1,4 +1,3 @@
-version: "3"
 services:
   postgres:
     image: library/postgres:13
@@ -25,7 +24,7 @@ services:
     command: ["bash", "/init-databases.sh"]
 
   cars-service:
-    build: ./services/cars_service
+    build: .
     container_name: cars-service
     restart: on-failure
     environment:
@@ -34,9 +33,10 @@ services:
       - "8070:8070"
     depends_on:
       - db-init
+    command: ["uvicorn", "services.cars_service.main:app", "--host", "0.0.0.0", "--port", "8070"]
 
   rental-service:
-    build: ./services/rental_service
+    build: .
     container_name: rental-service
     restart: on-failure
     environment:
@@ -46,9 +46,10 @@ services:
     depends_on:
       - db-init
       - cars-service
+    command: ["uvicorn", "services.rental_service.main:app", "--host", "0.0.0.0", "--port", "8060"]
 
   payment-service:
-    build: ./services/payment_service
+    build: .
     container_name: payment-service
     restart: on-failure
     environment:
@@ -57,9 +58,10 @@ services:
       - "8050:8050"
     depends_on:
       - db-init
+    command: ["uvicorn", "services.payment_service.main:app", "--host", "0.0.0.0", "--port", "8050"]
 
   gateway-service:
-    build: ./services/gateway_service
+    build: .
     container_name: gateway-service
     restart: on-failure
     environment:
@@ -72,6 +74,7 @@ services:
       - cars-service
       - rental-service
       - payment-service
+    command: ["uvicorn", "services.gateway_service.main:app", "--host", "0.0.0.0", "--port", "8080"]
 
 volumes:
   db-data:
