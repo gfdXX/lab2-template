@@ -19,10 +19,10 @@ jobs:
 
       - name: Run unit tests
         run: |
-          docker compose run --rm cars-service python -m pytest -v || true
-          docker compose run --rm rental-service python -m pytest -v || true
-          docker compose run --rm payment-service python -m pytest -v || true
-          docker compose run --rm gateway-service python -m pytest -v || true
+          docker compose run --rm cars-service python -m pytest services/cars_service/tests/ -v || true
+          docker compose run --rm rental-service python -m pytest services/rental_service/tests/ -v || true
+          docker compose run --rm payment-service python -m pytest services/payment_service/tests/ -v || true
+          docker compose run --rm gateway-service python -m pytest services/gateway_service/tests/ -v || true
 
       - name: Clean Docker cache and volumes
         run: |
