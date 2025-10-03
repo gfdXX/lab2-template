@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all services
 COPY services/ ./services/
 
+# Copy pytest configuration
+COPY pytest.ini ./
+
 # Expose all ports (will be overridden in docker-compose)
 EXPOSE 8050 8060 8070 8080
 
