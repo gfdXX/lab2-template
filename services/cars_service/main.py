@@ -87,7 +87,7 @@ async def health_check():
 
 @app.get("/api/v1/cars", response_model=CarListResponse)
 async def get_cars(
-    page: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
     pageSize: int = Query(20, ge=1, le=100),
     showAll: bool = Query(False),
     db: Session = Depends(get_db)
@@ -99,7 +99,7 @@ async def get_cars(
         query = query.filter(Car.availability == True)
     
     total = query.count()
-    cars = query.offset(page * pageSize).limit(pageSize).all()
+    cars = query.offset((page - 1) * pageSize).limit(pageSize).all()
     
     return CarListResponse(
         page=page,
@@ -138,7 +138,7 @@ async def get_car(car_uid: UUID, db: Session = Depends(get_db)):
 @app.patch("/api/v1/cars/{car_uid}/availability")
 async def update_car_availability(
     car_uid: UUID, 
-    available: bool,
+    available: bool = Query(...),
     db: Session = Depends(get_db)
 ):
     """Update car availability"""

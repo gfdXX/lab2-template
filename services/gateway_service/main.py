@@ -24,7 +24,7 @@ PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8
 
 # Pydantic models
 class RentalRequest(BaseModel):
-    carUid: UUID
+    carUid: str
     dateFrom: str
     dateTo: str
 
@@ -45,11 +45,9 @@ async def get_cars(
 ):
     """Get list of available cars"""
     try:
-        # Convert page from 1-based to 0-based for internal services
-        internal_page = page - 1 if page > 0 else 0
         response = requests.get(
             f"{CARS_SERVICE_URL}/api/v1/cars",
-            params={"page": internal_page, "pageSize": size, "showAll": show_all}
+            params={"page": page, "pageSize": size, "showAll": show_all}
         )
         if response.status_code == 200:
             return response.json()
@@ -118,7 +116,7 @@ async def create_rental(rental_request: RentalRequest, username: str = Depends(g
             json=rental_request.dict(),
             headers={"X-User-Name": username}
         )
-        if response.status_code == 201:
+        if response.status_code == 200:
             return response.json()
         else:
             raise HTTPException(status_code=response.status_code, detail="Rental service error")

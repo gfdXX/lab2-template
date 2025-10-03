@@ -33,12 +33,12 @@ class Rental(Base):
 
 # Pydantic models
 class RentalRequest(BaseModel):
-    carUid: UUID
+    carUid: str
     dateFrom: str
     dateTo: str
 
 class RentalResponse(BaseModel):
-    rentalUid: UUID
+    rentalUid: str
     status: str
     dateFrom: str
     dateTo: str
@@ -47,9 +47,6 @@ class RentalResponse(BaseModel):
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str
-        }
 
 class RentalListResponse(BaseModel):
     page: int
@@ -231,7 +228,7 @@ async def create_rental(
     rental = Rental(
         username=username,
         payment_uid=payment_info["paymentUid"],
-        car_uid=rental_request.carUid,
+        car_uid=UUID(rental_request.carUid),
         date_from=date_from,
         date_to=date_to,
         status="IN_PROGRESS"
@@ -242,7 +239,7 @@ async def create_rental(
     db.refresh(rental)
     
     return RentalResponse(
-        rentalUid=rental.rental_uid,
+        rentalUid=str(rental.rental_uid),
         status=rental.status,
         dateFrom=rental.date_from.isoformat(),
         dateTo=rental.date_to.isoformat(),
