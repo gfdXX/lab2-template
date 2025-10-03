@@ -42,6 +42,19 @@ jobs:
           ./scripts/wait-script.sh
           # Additional wait for database initialization
           sleep 10
+          # Show container logs for debugging
+          echo "=== Container Status ==="
+          docker compose ps
+          echo "=== Gateway Service Logs ==="
+          docker compose logs gateway-service --tail=20
+          echo "=== Cars Service Logs ==="
+          docker compose logs cars-service --tail=20
+          echo "=== Rental Service Logs ==="
+          docker compose logs rental-service --tail=20
+          echo "=== Database Check ==="
+          docker exec postgres psql -U program -d cars -c "SELECT COUNT(*) FROM cars;" || echo "Cars DB check failed"
+          docker exec postgres psql -U program -d rentals -c "SELECT COUNT(*) FROM rental;" || echo "Rentals DB check failed"
+          docker exec postgres psql -U program -d payments -c "SELECT COUNT(*) FROM payment;" || echo "Payments DB check failed"
         env:
           WAIT_PORTS: 8080,8070,8060,8050
 
