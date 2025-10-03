@@ -92,7 +92,7 @@ def get_username(x_user_name: str = Header(None)):
 async def health_check():
     return {"status": "OK"}
 
-@app.get("/api/v1/rental", response_model=List[RentalResponse])
+@app.get("/api/v1/rental", response_model=RentalListResponse)
 async def get_rentals(
     username: str = Depends(get_username),
     page: int = 0,
@@ -130,7 +130,12 @@ async def get_rentals(
             payment=payment_data
         ))
     
-    return items
+    return RentalListResponse(
+        page=page,
+        pageSize=page_size,
+        totalElements=total,
+        items=items
+    )
 
 @app.get("/api/v1/rental/{rental_uid}", response_model=RentalResponse)
 async def get_rental(
