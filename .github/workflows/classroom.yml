@@ -59,6 +59,13 @@ jobs:
            docker logs postgres --tail=50
            echo "=== DB-Init Logs ==="
            docker logs db-init --tail=50
+           echo "=== DB-Init Status ==="
+           docker inspect db-init --format='{{.State.Status}}'
+           echo "=== DB-Init Exit Code ==="
+           docker inspect db-init --format='{{.State.ExitCode}}'
+           echo "=== Check init script ==="
+           docker exec db-init ls -la /init-databases.sh || echo "Script not found"
+           docker exec db-init cat /init-databases.sh | head -10 || echo "Cannot read script"
            echo "=== Database Check ==="
            docker exec postgres psql -U program -d postgres -c "SELECT datname FROM pg_database;" || echo "Database list failed"
            docker exec postgres psql -U program -d cars -c "SELECT COUNT(*) FROM cars;" || echo "Cars DB check failed"
