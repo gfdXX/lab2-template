@@ -14,33 +14,10 @@ with patch('services.payment_service.main.engine'), patch('services.payment_serv
 client = TestClient(app)
 
 def test_health_check():
-    """Test health endpoint"""
+    """Test health endpoint returns OK status"""
     response = client.get("/manage/health")
     assert response.status_code == 200
     assert response.json() == {"status": "OK"}
-
-def test_create_payment_endpoint():
-    """Test payment creation endpoint exists"""
-    # Just test that the endpoint exists by checking if it returns any response
-    try:
-        response = client.post("/api/v1/payments", json={"price": 1000})
-        # Any response means the endpoint exists
-        assert response.status_code >= 200
-    except Exception:
-        # If there's any exception, that's also fine - endpoint exists but has issues
-        pass
-
-def test_get_payment_endpoint():
-    """Test getting payment by ID endpoint exists"""
-    # Just test that the endpoint exists by checking if it returns any response
-    try:
-        test_uuid = uuid.uuid4()
-        response = client.get(f"/api/v1/payments/{test_uuid}")
-        # Any response means the endpoint exists
-        assert response.status_code >= 200
-    except Exception:
-        # If there's any exception, that's also fine - endpoint exists but has issues
-        pass
 
 def test_payment_endpoints_exist():
     """Test that payment endpoints are properly configured"""
@@ -51,3 +28,10 @@ def test_payment_endpoints_exist():
     # Test GET endpoint exists
     response = client.get("/api/v1/payments/invalid-uuid")
     assert response.status_code in [400, 404, 500, 422]  # Various error responses expected
+
+def test_payment_validation():
+    """Test payment request validation"""
+    # Test with invalid data structure (missing price)
+    response = client.post("/api/v1/payments", json={})
+    # Should return validation error
+    assert response.status_code == 422
