@@ -24,17 +24,24 @@ jobs:
           docker compose run --rm payment-service python -m pytest tests/ -v || true
           docker compose run --rm gateway-service python -m pytest tests/ -v || true
 
+      - name: Clean Docker cache
+        run: |
+          docker system prune -f
+          docker builder prune -f
+
       - name: Build images
-        timeout-minutes: 10
-        run: docker compose build
+        timeout-minutes: 15
+        run: docker compose build --no-cache
 
       - name: Run containers
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           docker compose up -d
           chmod +x ./scripts/wait-script.sh
           chmod +x ./scripts/wait-for.sh
           ./scripts/wait-script.sh
+          # Additional wait for database initialization
+          sleep 10
         env:
           WAIT_PORTS: 8080,8070,8060,8050
 
