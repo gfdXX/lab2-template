@@ -4,7 +4,7 @@ set -e
 echo "Starting database initialization..."
 
 # Wait for PostgreSQL to be ready
-until pg_isready -h localhost -p 5432 -U program; do
+until pg_isready -h postgres -p 5432 -U program; do
   echo "Waiting for PostgreSQL to be ready..."
   sleep 2
 done
@@ -12,7 +12,7 @@ done
 echo "PostgreSQL is ready, creating databases..."
 
 # Create databases
-psql -v ON_ERROR_STOP=1 -U program -d postgres <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h postgres -U program -d postgres <<-EOSQL
     CREATE DATABASE cars;
     CREATE DATABASE rentals;
     CREATE DATABASE payments;
@@ -24,7 +24,7 @@ EOSQL
 echo "Databases created successfully"
 
 # Create cars schema and insert data
-psql -v ON_ERROR_STOP=1 -U program -d cars <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h postgres -U program -d cars <<-EOSQL
     CREATE TABLE cars
     (
         id                  SERIAL PRIMARY KEY,
@@ -51,7 +51,7 @@ EOSQL
 echo "Cars schema and data created successfully"
 
 # Create rentals schema
-psql -v ON_ERROR_STOP=1 -U program -d rentals <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h postgres -U program -d rentals <<-EOSQL
     CREATE TABLE rental
     (
         id          SERIAL PRIMARY KEY,
@@ -71,7 +71,7 @@ EOSQL
 echo "Rentals schema created successfully"
 
 # Create payments schema
-psql -v ON_ERROR_STOP=1 -U program -d payments <<-EOSQL
+psql -v ON_ERROR_STOP=1 -h postgres -U program -d payments <<-EOSQL
     CREATE TABLE payment
     (
         id          SERIAL PRIMARY KEY,

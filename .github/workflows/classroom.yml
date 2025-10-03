@@ -57,6 +57,8 @@ jobs:
           docker compose logs rental-service --tail=20
            echo "=== PostgreSQL Logs ==="
            docker logs postgres --tail=50
+           echo "=== DB-Init Logs ==="
+           docker logs db-init --tail=50
            echo "=== Database Check ==="
            docker exec postgres psql -U program -d postgres -c "SELECT datname FROM pg_database;" || echo "Database list failed"
            docker exec postgres psql -U program -d cars -c "SELECT COUNT(*) FROM cars;" || echo "Cars DB check failed"
