@@ -61,30 +61,82 @@ def test_create_rental_through_gateway():
         "dateTo": "2024-01-05"
     }
     
+    # Mock car data
+    mock_car_data = {
+        "carUid": "109b42f3-198d-4c89-9276-a7520a7120ab",
+        "brand": "Mercedes Benz",
+        "model": "GLA 250",
+        "registrationNumber": "ЛО777Х799",
+        "power": 249,
+        "price": 3500,
+        "type": "SEDAN",
+        "available": True
+    }
+    
+    # Mock payment response
+    mock_payment_response = {
+        "paymentUid": str(uuid.uuid4()),
+        "status": "PAID",
+        "price": 14000
+    }
+    
+    # Mock rental response
     mock_rental_response = {
         "rentalUid": str(uuid.uuid4()),
         "status": "IN_PROGRESS",
         "dateFrom": "2024-01-01",
         "dateTo": "2024-01-05",
         "carUid": "109b42f3-198d-4c89-9276-a7520a7120ab",
-        "car": {
-            "carUid": "109b42f3-198d-4c89-9276-a7520a7120ab",
-            "brand": "Mercedes Benz",
-            "model": "GLA 250",
-            "price": 3500
-        },
-        "payment": {
-            "paymentUid": str(uuid.uuid4()),
-            "status": "PAID",
-            "price": 14000
-        }
+        "paymentUid": mock_payment_response["paymentUid"]
     }
     
-    with patch('services.gateway_service.main.requests.post') as mock_post:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = mock_rental_response
-        mock_post.return_value = mock_response
+    with patch('services.gateway_service.main.requests.get') as mock_get, \
+         patch('services.gateway_service.main.requests.post') as mock_post, \
+         patch('services.gateway_service.main.requests.patch') as mock_patch:
+        
+        # Mock car availability check
+        car_response = MagicMock()
+        car_response.status_code = 200
+        car_response.json.return_value = mock_car_data
+        
+        # Mock payment creation
+        payment_response = MagicMock()
+        payment_response.status_code = 201
+        payment_response.json.return_value = mock_payment_response
+        
+        # Mock car reservation
+        car_reserve_response = MagicMock()
+        car_reserve_response.status_code = 200
+        
+        # Mock rental creation
+        rental_response = MagicMock()
+        rental_response.status_code = 200
+        rental_response.json.return_value = mock_rental_response
+        
+        # Configure mocks to return appropriate responses based on URL
+        def mock_get_side_effect(*args, **kwargs):
+            url = args[0] if args else kwargs.get('url', '')
+            if 'cars' in url and 'availability' not in url:
+                return car_response
+            return MagicMock()
+        
+        def mock_post_side_effect(*args, **kwargs):
+            url = args[0] if args else kwargs.get('url', '')
+            if 'payments' in url:
+                return payment_response
+            elif 'rental' in url:
+                return rental_response
+            return MagicMock()
+        
+        def mock_patch_side_effect(*args, **kwargs):
+            url = args[0] if args else kwargs.get('url', '')
+            if 'availability' in url:
+                return car_reserve_response
+            return MagicMock()
+        
+        mock_get.side_effect = mock_get_side_effect
+        mock_post.side_effect = mock_post_side_effect
+        mock_patch.side_effect = mock_patch_side_effect
         
         response = client.post(
             "/api/v1/rental", 
@@ -95,5 +147,6 @@ def test_create_rental_through_gateway():
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "IN_PROGRESS"
-        assert data["car"]["brand"] == "Mercedes Benz"
+        assert data["carUid"] == "109b42f3-198d-4c89-9276-a7520a7120ab"
         assert data["payment"]["status"] == "PAID"
+        assert data["payment"]["price"] == 14000
