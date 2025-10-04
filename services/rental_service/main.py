@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 import uuid
 from uuid import UUID
 import os
-import requests
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://program:test@localhost:5432/rentals")
@@ -43,8 +42,7 @@ class RentalResponse(BaseModel):
     dateFrom: str
     dateTo: str
     carUid: str
-    car: dict
-    payment: dict
+    paymentUid: str
 
     class Config:
         from_attributes = True
@@ -106,28 +104,13 @@ async def get_rentals(
     
     items = []
     for rental in rentals:
-        # Get car info from Cars Service
-        try:
-            car_response = requests.get(f"http://cars-service:8070/api/v1/cars/{rental.car_uid}")
-            car_data = car_response.json() if car_response.status_code == 200 else {}
-        except:
-            car_data = {}
-        
-        # Get payment info from Payment Service
-        try:
-            payment_response = requests.get(f"http://payment-service:8050/api/v1/payments/{rental.payment_uid}")
-            payment_data = payment_response.json() if payment_response.status_code == 200 else {}
-        except:
-            payment_data = {}
-        
         items.append(RentalResponse(
             rentalUid=str(rental.rental_uid),
             status=rental.status,
             dateFrom=rental.date_from.strftime("%Y-%m-%d") if isinstance(rental.date_from, datetime) else rental.date_from.isoformat(),
             dateTo=rental.date_to.strftime("%Y-%m-%d") if isinstance(rental.date_to, datetime) else rental.date_to.isoformat(),
             carUid=str(rental.car_uid),
-            car=car_data,
-            payment=payment_data
+            paymentUid=str(rental.payment_uid)
         ))
     
     return RentalListResponse(
@@ -152,57 +135,32 @@ async def get_rental(
     if not rental:
         raise HTTPException(status_code=404, detail="Rental not found")
     
-    # Get car info from Cars Service
-    try:
-        car_response = requests.get(f"http://cars-service:8070/api/v1/cars/{rental.car_uid}")
-        car_data = car_response.json() if car_response.status_code == 200 else {}
-    except:
-        car_data = {}
-    
-    # Get payment info from Payment Service
-    try:
-        payment_response = requests.get(f"http://payment-service:8050/api/v1/payments/{rental.payment_uid}")
-        payment_data = payment_response.json() if payment_response.status_code == 200 else {}
-    except:
-        payment_data = {}
-    
     return RentalResponse(
         rentalUid=str(rental.rental_uid),
         status=rental.status,
         dateFrom=rental.date_from.strftime("%Y-%m-%d") if isinstance(rental.date_from, datetime) else rental.date_from.isoformat(),
         dateTo=rental.date_to.strftime("%Y-%m-%d") if isinstance(rental.date_to, datetime) else rental.date_to.isoformat(),
         carUid=str(rental.car_uid),
-        car=car_data,
-        payment=payment_data
+        paymentUid=str(rental.payment_uid)
     )
+
+class CreateRentalRequest(BaseModel):
+    carUid: str
+    dateFrom: str
+    dateTo: str
+    paymentUid: str
 
 @app.post("/api/v1/rental", response_model=RentalResponse)
 async def create_rental(
-    rental_request: RentalRequest,
+    rental_request: CreateRentalRequest,
     username: str = Depends(get_username),
     db: Session = Depends(get_db)
 ):
-    """Create new rental"""
+    """Create new rental record"""
     print(f"Creating rental for car {rental_request.carUid}, user {username}")
     
-    # Check if car exists and is available
+    # Parse dates
     try:
-        car_response = requests.get(f"http://cars-service:8070/api/v1/cars/{rental_request.carUid}")
-        print(f"Car service response: {car_response.status_code}")
-        if car_response.status_code != 200:
-            print(f"Car not found: {car_response.text}")
-            raise HTTPException(status_code=404, detail="Car not found")
-        car_data = car_response.json()
-        print(f"Car data: {car_data}")
-        if not car_data.get("available", False):
-            raise HTTPException(status_code=400, detail="Car is not available")
-    except requests.RequestException as e:
-        print(f"Cars service error: {e}")
-        raise HTTPException(status_code=503, detail="Cars service unavailable")
-    
-    # Calculate rental days and price
-    try:
-        # Handle different date formats
         if 'T' in rental_request.dateFrom:
             date_from = datetime.fromisoformat(rental_request.dateFrom.replace('Z', '+00:00'))
         else:
@@ -214,7 +172,6 @@ async def create_rental(
             raise HTTPException(status_code=400, detail="Invalid date format for dateFrom")
     
     try:
-        # Handle different date formats
         if 'T' in rental_request.dateTo:
             date_to = datetime.fromisoformat(rental_request.dateTo.replace('Z', '+00:00'))
         else:
@@ -224,40 +181,11 @@ async def create_rental(
             date_to = datetime.fromisoformat(rental_request.dateTo)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format for dateTo")
-    rental_days = (date_to - date_from).days
-    total_price = car_data["price"] * rental_days
-    
-    # Create payment
-    try:
-        payment_data = {"price": total_price}
-        payment_response = requests.post(
-            "http://payment-service:8050/api/v1/payments",
-            json=payment_data
-        )
-        if payment_response.status_code != 201:
-            raise HTTPException(status_code=503, detail="Payment service unavailable")
-        payment_info = payment_response.json()
-    except requests.RequestException:
-        raise HTTPException(status_code=503, detail="Payment service unavailable")
-    
-    # Reserve car
-    try:
-        requests.patch(
-            f"http://cars-service:8070/api/v1/cars/{rental_request.carUid}/availability",
-            params={"available": False}
-        )
-    except requests.RequestException:
-        # Rollback payment if car reservation fails
-        try:
-            requests.delete(f"http://payment-service:8050/api/v1/payments/{payment_info['paymentUid']}")
-        except:
-            pass
-        raise HTTPException(status_code=503, detail="Cars service unavailable")
     
     # Create rental record
     rental = Rental(
         username=username,
-        payment_uid=payment_info["paymentUid"],
+        payment_uid=UUID(rental_request.paymentUid),
         car_uid=UUID(rental_request.carUid),
         date_from=date_from,
         date_to=date_to,
@@ -274,8 +202,7 @@ async def create_rental(
         dateFrom=date_from.strftime("%Y-%m-%d"),
         dateTo=date_to.strftime("%Y-%m-%d"),
         carUid=str(rental.car_uid),
-        car=car_data,
-        payment=payment_info
+        paymentUid=str(rental.payment_uid)
     )
 
 @app.post("/api/v1/rental/{rental_uid}/finish")
@@ -295,15 +222,6 @@ async def finish_rental(
     
     if rental.status != "IN_PROGRESS":
         raise HTTPException(status_code=400, detail="Rental is not in progress")
-    
-    # Release car
-    try:
-        requests.patch(
-            f"http://cars-service:8070/api/v1/cars/{rental.car_uid}/availability",
-            params={"available": True}
-        )
-    except requests.RequestException:
-        pass  # Continue even if car service is unavailable
     
     # Update rental status
     rental.status = "FINISHED"
@@ -328,21 +246,6 @@ async def cancel_rental(
     
     if rental.status == "CANCELED":
         raise HTTPException(status_code=400, detail="Rental already canceled")
-    
-    # Release car
-    try:
-        requests.patch(
-            f"http://cars-service:8070/api/v1/cars/{rental.car_uid}/availability",
-            params={"available": True}
-        )
-    except requests.RequestException:
-        pass
-    
-    # Cancel payment
-    try:
-        requests.delete(f"http://payment-service:8050/api/v1/payments/{rental.payment_uid}")
-    except requests.RequestException:
-        pass
     
     # Update rental status
     rental.status = "CANCELED"
