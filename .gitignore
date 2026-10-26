@@ -1176,6 +1176,11 @@ ASALocalRun/
 # Local History for Visual Studio
 .localhistory/
 
+# Test databases
+*.db
+test.db
+services/*/test.db
+
 # BeatPulse healthcheck temp database
 healthchecksdb
 

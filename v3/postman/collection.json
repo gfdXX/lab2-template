@@ -381,7 +381,7 @@
 									"    const rentalPrice = pm.collectionVariables.get(\"rentalPrice\")",
 									"",
 									"    const response = pm.response.json();",
-									"    const rental = _.find(response, { \"rentalUid\": rentalUid })",
+									"    const rental = _.find(response.items, { \"rentalUid\": rentalUid })",
 									"    pm.expect(rental).to.be.not.undefined",
 									"    pm.expect(rental.rentalUid).to.be.eq(rentalUid)",
 									"    pm.expect(rental.status).to.be.eq(\"IN_PROGRESS\")",

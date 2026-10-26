@@ -5,13 +5,11 @@
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
 
 Лабораторная работа №2 по курсу «Распределённые системы обработки информации», МГТУ им. Н.Э. Баумана (осень 2025).
-
-> **Код решения — в ветке [`test`](https://github.com/gfdXX/lab2-template/tree/test).**
-> В `master` лежит исходный шаблон курса, условие задания — в [ASSIGNMENT.md](ASSIGNMENT.md).
+Условие задания — в [ASSIGNMENT.md](ASSIGNMENT.md), вариант 3 — Car Rental System.
 
 ## Что сделано
 
-Система аренды автомобилей из четырёх сервисов на **FastAPI + SQLAlchemy**:
+Система аренды автомобилей из четырёх сервисов на **FastAPI + SQLAlchemy** ([`services/`](services)):
 
 | Сервис | Порт | Ответственность |
 |---|---|---|
@@ -23,12 +21,12 @@
 Через Gateway доступны список автомобилей, оформление аренды (бронирование машины + оплата), просмотр, завершение и отмена аренды — `/api/v1/cars`, `/api/v1/rental`, `/api/v1/rental/{uid}/finish`.
 У каждого сервиса своя логическая база в общем PostgreSQL, endpoint `GET /manage/health` и unit-тесты на `pytest`. Всё поднимается через `docker-compose`, API проверяется тестами Postman в GitHub Actions.
 
-![Схема сервисов](https://raw.githubusercontent.com/gfdXX/lab2-template/test/images/services.png)
+![Схема сервисов](images/services.png)
 
 ## Запуск
 
 ```bash
-git clone -b test https://github.com/gfdXX/lab2-template.git
+git clone https://github.com/gfdXX/lab2-template.git
 cd lab2-template
 docker compose up --build        # Gateway на http://localhost:8080
 ```
